@@ -5,13 +5,13 @@ using System.Web;
 using log4net;
 using Newtonsoft.Json;
 
-namespace PushClientService
+namespace PushClientService.services
 {
-    public class PushService
+    public class PushService : IPushService
     {
         private static readonly ILog _log = LogManager.GetLogger(typeof(PushService));
 
-        public static void Push(object data)
+        public void Push(object data)
         {
             var json = JsonConvert.SerializeObject(data);
             var postBody = string.Format("payload={0}", HttpUtility.UrlEncode(json));
