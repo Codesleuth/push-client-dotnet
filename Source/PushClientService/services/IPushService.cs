@@ -2,6 +2,7 @@
 {
     public interface IPushService
     {
-        void Push(object data);
+        bool Push(object data);
+        void Cancel();
     }
 }

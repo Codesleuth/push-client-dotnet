@@ -31,15 +31,23 @@ namespace PushClientService.Tests
     public class ServerTestsWhenStopping
     {
         private Mock<ISocketWrapper> _socket;
+        private Mock<IPushService> _pushService;
 
         [SetUp]
         public void GivenAServerWhenStopping()
         {
             _socket = new Mock<ISocketWrapper>();
+            _pushService = new Mock<IPushService>();
 
-            var server = new Server(() => _socket.Object, null, null);
+            var server = new Server(() => _socket.Object, _pushService.Object, null);
             server.Start();
             server.Stop();
+        }
+
+        [Test]
+        public void ThenThePushServiceIsCancelled()
+        {
+            _pushService.Verify(service => service.Cancel());
         }
 
         [Test]

@@ -55,12 +55,13 @@ namespace PushClientService
 
         private static void OnDisconnect()
         {
-            _log.InfoFormat("Socket.IO Disconnected.");
+            _log.Info("Socket.IO Disconnected.");
         }
 
         public void Stop()
         {
             _log.Info("Service stopping...");
+            _pushService.Cancel();
             _socket.Close();
             _socket.Disconnect();
             _log.Info("Service stopped.");

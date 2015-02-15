@@ -19,7 +19,12 @@ namespace PushClientService
 
         private static PushService CreatePushService()
         {
-            return new PushService();
+            return new PushService(CreatePayloadPusher(), Configuration.ConcurrentPushes, Configuration.MaxPushQueue);
+        }
+
+        private static PayloadPusher CreatePayloadPusher()
+        {
+            return new PayloadPusher(Configuration.CiUrl);
         }
     }
 }

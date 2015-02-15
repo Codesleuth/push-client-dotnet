@@ -1,9 +1,7 @@
-﻿using System;
-using System.Net;
-using System.Text;
-using System.Web;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using log4net;
-using Newtonsoft.Json;
+using PushClientService.threading;
 
 namespace PushClientService.services
 {
@@ -11,32 +9,43 @@ namespace PushClientService.services
     {
         private static readonly ILog _log = LogManager.GetLogger(typeof(PushService));
 
-        public void Push(object data)
+        private readonly TaskFactory _taskFactory;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+        private readonly IPayloadPusher _payloadPusher;
+        private readonly int _maxPushQueue;
+        private readonly LimitedConcurrencyTaskScheduler _taskScheduler;
+
+        public PushService(IPayloadPusher payloadPusher, int concurrentPushes, int maxPushQueue)
         {
-            var json = JsonConvert.SerializeObject(data);
-            var postBody = string.Format("payload={0}", HttpUtility.UrlEncode(json));
+            _payloadPusher = payloadPusher;
+            _maxPushQueue = maxPushQueue;
+            _taskScheduler = new LimitedConcurrencyTaskScheduler(concurrentPushes);
+            _taskFactory = new TaskFactory(_taskScheduler);
+            _cancellationTokenSource = new CancellationTokenSource();
+        }
 
-            var request = (HttpWebRequest)WebRequest.Create(Configuration.CiUrl);
-            request.Method = "POST";
-            request.ContentType = "application/x-www-form-urlencoded";
-            request.Headers.Add("X-Github-Event", "push");
-
-            var dataBytes = Encoding.UTF8.GetBytes(postBody);
-            request.ContentLength = dataBytes.Length;
-            var requestStream = request.GetRequestStream();
-            requestStream.Write(dataBytes, 0, dataBytes.Length);
-            requestStream.Close();
-
-            _log.InfoFormat("Forwarding event to {0}...", Configuration.CiUrl);
-            try
+        public bool Push(object data)
+        {
+            if (_taskScheduler.QueuedOrExecutingTasks > _maxPushQueue)
             {
-                var response = request.GetResponse();
-                response.Close();
+                _log.ErrorFormat("Queued push tasks max reached ({0}); rejecting push.", _taskScheduler.QueuedOrExecutingTasks);
+                return false;
             }
-            catch (Exception ex)
-            {
-                _log.Error("Forwarding request failed", ex);
-            }
+            _log.Info("Queueing new push task.");
+            _taskFactory.StartNew(PushPayload, data);
+            return true;
+        }
+
+        private void PushPayload(object data)
+        {
+            _log.Info("Pushing payload...");
+            _payloadPusher.Push(data);
+            _log.Info("Payload pushed.");
+        }
+
+        public void Cancel()
+        {
+            _cancellationTokenSource.Cancel();
         }
     }
 }
