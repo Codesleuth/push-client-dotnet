@@ -31,6 +31,7 @@ namespace PushClientService
             _socket = _socketFactory();
             _socket.On(EVENT_CONNECT, OnConnected);
             _socket.On(EVENT_DISCONNECT, OnDisconnect);
+            _socket.On(EVENT_PUSH_EVENT, OnPushEvent);
             _log.Info("Service started.");
         }
 
@@ -38,7 +39,6 @@ namespace PushClientService
         {
             _log.Info("Socket.IO Connected.");
             _socket.Emit("secret", OnSecretCallback, _secret);
-            _socket.On(EVENT_PUSH_EVENT, OnPushEvent);
         }
 
         private void OnPushEvent(object data)

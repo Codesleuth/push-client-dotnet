@@ -25,6 +25,12 @@ namespace PushClientService.Tests
         {
             _socket.Verify(socket => socket.On("connect", It.IsAny<Action>()));
         }
+
+        [Test]
+        public void ThenAPushEventHandlerIsAttached()
+        {
+            _socket.Verify(socket => socket.On("PushEvent", It.IsAny<Action<object>>()));
+        }
     }
 
     [TestFixture]
@@ -87,12 +93,6 @@ namespace PushClientService.Tests
         public void ThenTheSecretIsSentToTheServer()
         {
             _socket.Verify(socket => socket.Emit("secret", It.IsAny<Action<object>>(), _secret));
-        }
-
-        [Test]
-        public void ThenAPushEventHandlerIsAttached()
-        {
-            _socket.Verify(socket => socket.On("PushEvent", It.IsAny<Action<object>>()));
         }
     }
 
