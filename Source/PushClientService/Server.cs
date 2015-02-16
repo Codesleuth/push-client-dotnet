@@ -1,39 +1,67 @@
-﻿using log4net;
+﻿using System;
+using log4net;
+using PushClientService.services;
+using PushClientService.wrappers;
 using Quobject.SocketIoClientDotNet.Client;
 
 namespace PushClientService
 {
     public class Server
     {
+        private static readonly string EVENT_CONNECT = Socket.EVENT_CONNECT;
+        private static readonly string EVENT_DISCONNECT = Socket.EVENT_DISCONNECT;
+        private const string EVENT_PUSH_EVENT = "PushEvent";
+
+        private readonly string _secret;
+        private readonly Func<ISocketWrapper> _socketFactory;
+        private readonly IPushService _pushService;
         private static readonly ILog _log = LogManager.GetLogger(typeof(Server));
-        private Socket _socket;
+        private ISocketWrapper _socket;
+
+        public Server(Func<ISocketWrapper> socketFactory, IPushService pushService, string secret)
+        {
+            _socketFactory = socketFactory;
+            _pushService = pushService;
+            _secret = secret;
+        }
 
         public void Start()
         {
             _log.Info("Service starting...");
-            _socket = IO.Socket(Configuration.PushProxyUrl);
-            _socket.On(Socket.EVENT_CONNECT, () =>
-            {
-                _log.InfoFormat("Connected to {0}.", Configuration.PushProxyUrl);
-
-                _socket.Emit("secret",
-                    data => _log.InfoFormat("Subscribed to secret: {0}", Configuration.Secret),
-                    Configuration.Secret);
-
-                _socket.On("PushEvent", data =>
-                {
-                    _log.Info("PushEvent received");
-                    _log.Debug("Payload: " + data.ToString());
-                    PushService.Push(data);
-                });
-            });
-            _socket.On(Socket.EVENT_DISCONNECT, () => _log.InfoFormat("Disconnected from {0}.", Configuration.PushProxyUrl));
+            _socket = _socketFactory();
+            _socket.On(EVENT_CONNECT, OnConnected);
+            _socket.On(EVENT_DISCONNECT, OnDisconnect);
             _log.Info("Service started.");
+        }
+
+        private void OnConnected()
+        {
+            _log.Info("Socket.IO Connected.");
+            _socket.Emit("secret", OnSecretCallback, _secret);
+            _socket.On(EVENT_PUSH_EVENT, OnPushEvent);
+        }
+
+        private void OnPushEvent(object data)
+        {
+            _log.Info("Socket.IO PushEvent received");
+            _log.Debug("Payload: " + data);
+            _pushService.Push(data);
+        }
+
+        private void OnSecretCallback(object data)
+        {
+            _log.InfoFormat("Subscribed to secret: {0}", _secret);
+        }
+
+        private static void OnDisconnect()
+        {
+            _log.Info("Socket.IO Disconnected.");
         }
 
         public void Stop()
         {
             _log.Info("Service stopping...");
+            _pushService.Cancel();
             _socket.Close();
             _socket.Disconnect();
             _log.Info("Service stopped.");
