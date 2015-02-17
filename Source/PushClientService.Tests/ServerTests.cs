@@ -2,6 +2,7 @@
 using Moq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using PushClientService.models;
 using PushClientService.services;
 using PushClientService.wrappers;
 
@@ -102,14 +103,33 @@ namespace PushClientService.Tests
     {
         private Mock<ISocketWrapper> _socket;
         private string _secret;
-        private JObject _data;
         private Mock<IPushService> _pushService;
+        private JObject _bodyObject;
+        private string _deliveryHeader;
+        private string _signatureHeader;
+        private string _userAgentHeader;
 
         [SetUp]
         public void GivenAServerWhenStartingThenReceivingPushEvent()
         {
             _secret = "somesecret";
-            _data = new JObject();
+            _deliveryHeader = "1234";
+            _signatureHeader = "badly written";
+            _userAgentHeader = "batman";
+
+            var headersObject = new JObject
+            {
+                {"X-Github-Delivery", _deliveryHeader},
+                {"X-Hub-Signature", _signatureHeader},
+                {"User-Agent", _userAgentHeader}
+            };
+            _bodyObject = new JObject();
+
+            var data = new JObject
+            {
+                {"headers", headersObject},
+                {"body", _bodyObject}
+            };
 
             _socket = new Mock<ISocketWrapper>();
             _socket
@@ -117,7 +137,7 @@ namespace PushClientService.Tests
                 .Callback<string, Action>((eventString, fn) => fn());
             _socket
                 .Setup(socket => socket.On("PushEvent", It.IsAny<Action<object>>()))
-                .Callback<string, Action<object>>((eventString, fn) => fn(_data));
+                .Callback<string, Action<object>>((eventString, fn) => fn(data));
 
             _pushService = new Mock<IPushService>();
 
@@ -128,7 +148,9 @@ namespace PushClientService.Tests
         [Test]
         public void ThenThePushEventIsPushed()
         {
-            _pushService.Verify(service => service.Push(_data));
+            _pushService.Verify(service => service.Push(It.Is<PushHeaders>(headers => headers.Delivery == _deliveryHeader
+                                                                                      && headers.Signature == _signatureHeader
+                                                                                      && headers.UserAgent == _userAgentHeader), _bodyObject));
         }
     }
 }
