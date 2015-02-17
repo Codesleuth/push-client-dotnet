@@ -4,7 +4,7 @@ namespace PushClientService.models
 {
     public class PushHeaders
     {
-        [JsonProperty("X-Github-Signature")]
+        [JsonProperty("X-Hub-Signature")]
         public string Signature { get; set; }
 
         [JsonProperty("X-Github-Delivery")]

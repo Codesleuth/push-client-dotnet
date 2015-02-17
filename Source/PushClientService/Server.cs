@@ -58,14 +58,8 @@ namespace PushClientService
                 _pushService.Push(null, jObject);
                 return;
             }
-            
-            var headers = new PushHeaders
-            {
-                Delivery = (string) jHeaders["X-Github-Delivery"],
-                Signature = (string) jHeaders["X-Hub-Signature"],
-                UserAgent = (string) jHeaders["User-Agent"],
-            };
 
+            var headers = jHeaders.ToObject<PushHeaders>();
             _pushService.Push(headers, jBody);
         }
 
