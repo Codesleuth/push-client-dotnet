@@ -1,7 +1,9 @@
+using PushClientService.models;
+
 namespace PushClientService.services
 {
     public interface IPayloadPusher
     {
-        void Push(object data);
+        void Push(PushPayload payload);
     }
 }

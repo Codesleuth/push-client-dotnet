@@ -52,6 +52,13 @@ namespace PushClientService
             var jHeaders = jObject["headers"];
             var jBody = (JObject) jObject["body"];
 
+            // server version transitioning, can be removed very soon
+            if (jHeaders == null)
+            {
+                _pushService.Push(null, jObject);
+                return;
+            }
+            
             var headers = new PushHeaders
             {
                 Delivery = (string) jHeaders["X-Github-Delivery"],

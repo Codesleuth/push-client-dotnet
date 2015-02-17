@@ -52,26 +52,16 @@ namespace PushClientService.services
 
         private void PushPayload(object data)
         {
+            var payload = (PushPayload) data;
+
             _log.Info("Pushing payload...");
-            _payloadPusher.Push(data);
+            _payloadPusher.Push(payload);
             _log.Info("Payload pushed.");
         }
 
         public void Cancel()
         {
             _cancellationTokenSource.Cancel();
-        }
-    }
-
-    public class PushPayload
-    {
-        public PushHeaders Headers { get; private set; }
-        public JObject Body { get; private set; }
-
-        public PushPayload(PushHeaders headers, JObject body)
-        {
-            Headers = headers;
-            Body = body;
         }
     }
 }
