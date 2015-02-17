@@ -1,5 +1,6 @@
 ﻿using System;
 using Moq;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using PushClientService.services;
 using PushClientService.wrappers;
@@ -101,14 +102,14 @@ namespace PushClientService.Tests
     {
         private Mock<ISocketWrapper> _socket;
         private string _secret;
-        private object _data;
+        private JObject _data;
         private Mock<IPushService> _pushService;
 
         [SetUp]
         public void GivenAServerWhenStartingThenReceivingPushEvent()
         {
             _secret = "somesecret";
-            _data = new object();
+            _data = new JObject();
 
             _socket = new Mock<ISocketWrapper>();
             _socket

@@ -1,5 +1,7 @@
 ﻿using System;
 using log4net;
+using Newtonsoft.Json.Linq;
+using PushClientService.models;
 using PushClientService.services;
 using PushClientService.wrappers;
 using Quobject.SocketIoClientDotNet.Client;
@@ -45,7 +47,19 @@ namespace PushClientService
         {
             _log.Info("Socket.IO PushEvent received");
             _log.Debug("Payload: " + data);
-            _pushService.Push(data);
+
+            var jObject = (JObject) data;
+            var jHeaders = jObject["headers"];
+            var jBody = (JObject) jObject["body"];
+
+            var headers = new PushHeaders
+            {
+                Delivery = (string) jHeaders["X-Github-Delivery"],
+                Signature = (string) jHeaders["X-Hub-Signature"],
+                UserAgent = (string) jHeaders["User-Agent"],
+            };
+
+            _pushService.Push(headers, jBody);
         }
 
         private void OnSecretCallback(object data)
